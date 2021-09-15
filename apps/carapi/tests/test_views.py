@@ -2,7 +2,7 @@ import json
 
 from rest_framework import status
 from django.test import TestCase, Client
-from rest_framework.test import APIRequestFactory
+from rest_framework.test import APITransactionTestCase
 
 from ..models import Car, SubModel
 from ..serializers import SubModelSerializer, CarSerializer
@@ -75,5 +75,19 @@ class AddCarTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
-factory = APIRequestFactory()
-request = factory.get('/searchcar/', {'price': '28000', 'mileage': '178000'})
+class CarSearchTest(APITransactionTestCase):
+    def test_null(self):
+        parms = {"price": "100", "mileage": "10001"}
+        response = self.client.post("searchcar/", parms=parms)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def wrong_parms(self):
+        parms = {"pe": "100", "m": "10001"}
+        response = self.client.post("searchcar/", parms=parms)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def get_car_test(self):
+        parms = {"price": "200", "mileage": "10100"}
+        response = self.client.post("searchcar/", parms=parms)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

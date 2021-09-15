@@ -1,7 +1,8 @@
+from django.db.models import Q
 from rest_framework import viewsets, generics
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django_filters import rest_framework as filters
 
 from .serializers import SubModelSerializer, CarSerializer
 from .models import Car, SubModel
@@ -38,8 +39,17 @@ class ADDCarView(APIView):
         return Response(create_serializer.errors, status=400)
 
 
-class CarSearchView(generics.ListCreateAPIView):
-    filter_backends = (filters.DjangoFilterBackend,)
-    filterset_fields = ('price', 'mileage')
-    queryset = Car.objects.all().order_by('updated_at')
+class CarSearchView(generics.ListAPIView):
     serializer_class = CarSerializer
+    queryset = Car.objects.all()
+
+    def get_queryset(self):
+        """
+        return car on base of user filter for mileage and price.
+        """
+        if self.request.GET.get('price') and self.request.GET.get('mileage'):
+            return super().get_queryset().filter(
+                Q(price=self.request.GET.get('price')) & Q(mileage=self.request.GET.get('mileage'))
+            ).order_by('updated_at')
+        else:
+            raise ValidationError(detail='Invalid Params')
